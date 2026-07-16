@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Churn Risk Dashboard</title>
+    <style>
+        /* CSS Variables for easy theming */
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #ddd6fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+            --radius-sm: 0.375rem;
+            --radius: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --transition: all 0.2s ease;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: rotate(30deg);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            font-weight: 400;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.75rem;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--gray-700);
+            font-size: 0.95rem;
+        }
+
+        .control-group select {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background-color: white;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:secondary {
+            background: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .btn:secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-top: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+        }
+
+        .stat-low::before { background: var(--success); }
+        .stat-medium::before { background: var(--warning); }
+        .stat-high::before { background: var(--danger); }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-icon {
+            font-size: 1.25rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        th {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: var(--gray-50);
+        }
+
+        tr:hover td:first-child {
+            border-top-left-radius: var(--radius);
+        }
+
+        tr:hover td:last-child {
+            border-top-right-radius: var(--radius);
+        }
+
+        .merchant-name {
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 1rem;
+        }
+
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .plan-basic { background: var(--primary-light); color: var(--primary); }
+        .plan-pro { background: #dbeafe; color: #2563eb; }
+        .plan-enterprise { background: #fef3c7; color: #d97706; }
+
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-low { background: #dcfce7; color: #166534; }
+        .risk-medium { background: #fffbeb; color: #92400e; }
+        .risk-high { background: #fef2f2; color: #991b1b; }
+
+        .risk-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .no-data {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+            font-style: italic;
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            color: var(--gray-500);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+                padding: 1.25rem;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            th, td {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-800);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+        }
+
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--gray-800);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+        }
+
+        .tooltip:hover::after,
+        .tooltip:hover::before {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Merchant Churn Risk Dashboard</h1>
+            <p class="subtitle">Proactive merchant retention through intelligent risk assessment</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="riskFilter">Filter by Risk Level:</label>
+                <select id="riskFilter">
+                    <option value="all">All Risk Levels</option>
+                    <option value="low">Low Risk</option>
+                    <option value="medium">Medium Risk</option>
+                    <option value="high">High Risk</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="planFilter">Filter by Plan Tier:</label>
+                <select id="planFilter">
+                    <option value="all">All Plan Tiers</option>
+                    <option value="basic">Basic</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="sortBy">Sort By:</label>
+                <select id="sortBy">
+                    <option value="riskScore">Risk Score (High to Low)</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="lastActivity">Last Activity (Recent First)</option>
+                    <option value="volume">Transaction Volume (High to Low)</option>
+                </select>
+            </div>
+
+            <button class="btn" id="refreshBtn">
+                <span>🔄</span> Refresh Data
+            </button>
+        </div>
+
+        <div class="stats" id="statsContainer">
+            <!-- Stats will be populated here -->
+        </div>
+
+        <table id="merchantTable">
+            <thead>
+                <tr>
+                    <th>Merchant</th>
+                    <th>Plan</th>
+                    <th>Joined</th>
+                    <th>Last Active</th>
+                    <th>Monthly Volume</th>
+                    <th>Volume Trend</th>
+                    <th>Login Freq.</th>
+                    <th>Support</th>
+                    <th>Customers</th>
+                    <th>Risk Level</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="merchantTableBody">
+                <!-- Rows will be populated here -->
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <p>Merchant Churn Risk Dashboard • Built for CX AI-Proficiency Build Round</p>
+            <p>Last updated: <span id="lastUpdated"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Merchant data generation with more realistic patterns
+        function generateMockMerchants(count = 25) {
+            const planTiers = ['basic', 'pro', 'enterprise'];
+            const merchants = [];
+            const merchantNames = [
+                'Bloom Boutique', 'TechGear Supplies', 'FreshMart Grocery', 'Elite Fitness Studio',
+                'Cozy Corner Cafe', 'Skyline Consulting', 'Golden Leaf Bakery', 'Metro Auto Parts',
+                'Starlight Events', 'Ocean View Spa', 'Summit Outdoor Gear', 'Pixel Perfect Design',
+                'Heritage Books', 'QuickFix Repairs', 'Bloom Beauty Salon', 'Urban Threads Apparel',
+                'Prime Time Entertainment', 'Green Leaf Landscaping', 'City Lights Hotel', 'Apex Accounting'
+            ];
+
+            const startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - Math.floor(Math.random() * 24)); // Up to 2 years ago
+
+            for (let i = 0; i < count; i++) {
+                const id = `merch_${String(i+1).padStart(4, '0')}`;
+                // Use real merchant names with some variation
+                const baseName = merchantNames[i % merchantNames.length];
+                const name = Math.random() > 0.7 ? `${baseName} ${['LLC', 'Inc', 'Co.', 'Group', 'Solutions'][Math.floor(Math.random() * 5)]}` : baseName;
+
+                const signupDate = new Date(startDate.getTime() + Math.random() * 1000 * 60 * 60 * 24 * 180); // Within 6 months
+                const lastActivityDate = new Date();
+                lastActivityDate.setDate(lastActivityDate.getDate() - Math.floor(Math.random() * 60)); // Last activity 0-60 days ago
+
+                // More realistic volume based on business type
+                const volumeBase = Math.random() > 0.7 ? Math.floor(Math.random() * 500) + 50 : Math.floor(Math.random() * 2000) + 100;
+                const monthlyVolume = Math.floor(volumeBase * (0.8 + Math.random() * 0.4)); // Some variance
+                const volumeTrend = ((Math.random() - 0.3) * 60 - 10).toFixed(1); // Skewed toward negative
+                const loginFrequency = Math.max(0, (Math.random() * 4) - (Math.random() * 2)).toFixed(1); // Some low activity
+                const supportTickets = Math.floor(Math.random() * Math.random() * 8); // Most have few tickets
+                const customerCount = Math.floor(Math.sqrt(monthlyVolume) * Math.random() * 10 + 5); // Correlates with volume
+                const planTier = monthlyVolume > 1500 ? 'enterprise' : monthlyVolume > 500 ? 'pro' : 'basic';
+
+                merchants.push({
+                    id,
+                    name,
+                    signupDate: signupDate.toISOString().split('T')[0],
+                    lastActivityDate: lastActivityDate.toISOString().split('T')[0],
+                    monthlyTransactionVolume: monthlyVolume,
+                    transactionVolumeTrend: parseFloat(volumeTrend),
+                    loginFrequency: parseFloat(loginFrequency),
+                    supportTicketCount: supportTickets,
+                    customerCount: customerCount,
+                    planTier: planTier
+                });
+            }
+
+            return merchants;
+        }
+
+        // Calculate risk score with more nuanced logic
+        function calculateRiskScore(merchant) {
+            let score = 0;
+            let primarySignal = 'none';
+            let signalStrength = 0;
+
+            // Volume Decline: < -20% (more sensitive)
+            if (merchant.transactionVolumeTrend < -20) {
+                const severity = Math.min(Math.abs(merchant.transactionVolumeTrend) / 50, 1); // 0-1 scale
+                const points = 40 * severity;
+                score += points;
+                if (points > signalStrength) {
+                    signalStrength = points;
+                    primarySignal = 'volumeDecline';
+                }
+            }
+
+            // Inactivity: No login in last 14 days
+            const lastActivity = new Date(merchant.lastActivityDate);
+            const daysSinceLastActivity = (Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceLastActivity > 14) {
+                const severity = Math.min((daysSinceLastActivity - 14) / 30, 1); // 0-1 scale over 44 days
+                const points = 30 * severity;
+                score += points;
+                if (points > signalStrength) {
+                    signalStrength = points;
+                    primarySignal = 'inactivity';
+                }
+            }
+
+            // Low Engagement: loginFrequency < 2 AND customerCount < 15
+            if (merchant.loginFrequency < 2 && merchant.customerCount < 15) {
+                const freqScore = (2 - merchant.loginFrequency) / 2; // 0-1 scale
+                const custScore = (15 - merchant.customerCount) / 15; // 0-1 scale
+                const severity = (freqScore + custScore) / 2;
+                const points = 20 * severity;
+                score += points;
+                if (points > signalStrength) {
+                    signalStrength = points;
+                    primarySignal = 'lowEngagement';
+                }
+            }
+
+            // High Support Load: > 3 tickets (more sensitive)
+            if (merchant.supportTicketCount > 3) {
+                const severity = Math.min((merchant.supportTicketCount - 3) / 7, 1); // 0-1 scale up to 10 tickets
+                const points = 10 * severity;
+                score += points;
+                if (points > signalStrength) {
+                    signalStrength = points;
+                    primarySignal = 'highSupport';
+                }
+            }
+
+            return {
+                score: Math.min(score, 100), // Cap at 100
+                level: score <= 25 ? 'low' : score <= 50 ? 'medium' : 'high',
+                primarySignal: primarySignal,
+                signalStrength: signalStrength
+            };
+        }
+
+        // Get recommended action based on risk level and primary signal
+        function getRecommendedAction(merchant, riskAssessment) {
+            const { level, primarySignal } = riskAssessment;
+
+            if (level === 'low') {
+                return "Schedule quarterly check-in";
+            }
+
+            if (level === 'medium') {
+                switch(primarySignal) {
+                    case 'volumeDecline':
+                        return "Offer performance review & optimization consultation";
+                    case 'inactivity':
+                        return "Re-engagement email with new feature highlights";
+                    case 'lowEngagement':
+                        return "Provide onboarding refresher & usage tips";
+                    case 'highSupport':
+                        return "Assign dedicated support agent for issue resolution";
+                    default:
+                        return "Schedule outreach call";
+                }
+            }
+
+            // High risk
+            return "Immediate account manager intervention + retention offer";
+        }
+
+        // Format helpers
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function formatPercentage(num) {
+            return `${num >= 0 ? '+' : ''}${num.toFixed(1)}%`;
+        }
+
+        // Render merchants table with animations
+        function renderMerchants(merchants) {
+            const tbody = document.getElementById('merchantTableBody');
+            tbody.innerHTML = '';
+
+            if (merchants.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="no-data">No merchants match the current filters.</td></tr>';
+                return;
+            }
+
+            merchants.forEach((merchant, index) => {
+                const riskAssessment = calculateRiskScore(merchant);
+                const recommendedAction = getRecommendedAction(merchant, riskAssessment);
+
+                const tr = document.createElement('tr');
+                tr.className = 'fade-in';
+                tr.style.animationDelay = `${index * 0.05}s`;
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="merchant-info">
+                            <div class="merchant-name">${merchant.name}</div>
+                            <div class="merchant-id" style="font-size: 0.75rem; color: var(--gray-400);">${merchant.id}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="plan-badge plan-${merchant.planTier}">${merchant.planTier.toUpperCase()}</span>
+                    </td>
+                    <td>${formatDate(merchant.signupDate)}</td>
+                    <td>${formatDate(merchant.lastActivityDate)}</td>
+                    <td>${formatNumber(merchant.monthlyTransactionVolume)}</td>
+                    <td>${formatPercentage(merchant.transactionVolumeTrend)}</td>
+                    <td>${merchant.loginFrequency.toFixed(1)}/wk</td>
+                    <td>${merchant.supportTicketCount}</td>
+                    <td>${formatNumber(merchant.customerCount)}</td>
+                    <td>
+                        <span class="risk-badge risk-${riskAssessment.level}" title="Risk Score: ${riskAssessment.score}/100">
+                            ${riskAssessment.level.toUpperCase()}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="action-btn tooltip" data-tooltip="${recommendedAction}">
+                            ${recommendedAction.length > 18 ? recommendedAction.substring(0, 15) + '...' : recommendedAction}
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Update statistics with visual enhancements
+        function updateStatistics(merchants) {
+            const statsContainer = document.getElementById('statsContainer');
+            const total = merchants.length;
+            const riskCounts = { low: 0, medium: 0, high: 0 };
+            const avgRiskScore = merchants.reduce((sum, m) => sum + calculateRiskScore(m).score, 0) / Math.max(total, 1);
+
+            merchants.forEach(merchant => {
+                const riskLevel = calculateRiskScore(merchant).level;
+                riskCounts[riskLevel]++;
+            });
+
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${total}</div>
+                    <div class="stat-label"><span class="stat-icon">👥</span>Total Merchants</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value stat-low">${riskCounts.low}</div>
+                    <div class="stat-label"><span class="stat-icon">✅</span>Low Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value stat-medium">${riskCounts.medium}</div>
+                    <div class="stat-label"><span class="stat-icon">⚠️</span>Medium Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value stat-high">${riskCounts.high}</div>
+                    <div class="stat-label"><span class="stat-icon">🚨</span>High Risk</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${Math.round(avgRiskScore)}</div>
+                    <div class="stat-label"><span class="stat-icon">📊</span>Avg Risk Score</div>
+                </div>
+            `;
+        }
+
+        // Filter and sort merchants
+        function processMerchants(merchants) {
+            const riskFilter = document.getElementById('riskFilter').value;
+            const planFilter = document.getElementById('planFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            // Filter
+            let filtered = merchants.filter(merchant => {
+                const riskAssessment = calculateRiskScore(merchant);
+                const riskMatch = riskFilter === 'all' || riskAssessment.level === riskFilter;
+                const planMatch = planFilter === 'all' || merchant.planTier === planFilter;
+                return riskMatch && planMatch;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                switch(sortBy) {
+                    case 'riskScore':
+                        return calculateRiskScore(b).score - calculateRiskScore(a).score;
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'lastActivity':
+                        return new Date(b.lastActivityDate) - new Date(a.lastActivityDate);
+                    case 'volume':
+                        return b.monthlyTransactionVolume - a.monthlyTransactionVolume;
+                    default:
+                        return 0;
+                }
+            });
+
+            return filtered;
+        }
+
+        // Main update function with loading state
+        function updateDashboard() {
+            // Add loading state
+            document.body.classList.add('loading');
+
+            // Simulate slight delay for better UX
+            setTimeout(() => {
+                const merchants = generateMockMerchants();
+                const processedMerchants = processMerchants(merchants);
+                renderMerchants(processedMerchants);
+                updateStatistics(processedMerchants);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                document.body.classList.remove('loading');
+            }, 300);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDashboard();
+
+            document.getElementById('refreshBtn').addEventListener('click', updateDashboard);
+
+            ['riskFilter', 'planFilter', 'sortBy'].forEach(id => {
+                document.getElementById(id).addEventListener('change', updateDashboard);
+            });
+        });
+    </script>
+</body>
+</html>
